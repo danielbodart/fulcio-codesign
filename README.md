@@ -52,6 +52,15 @@ The tool resolves the OIDC token in this order:
 "github:danielbodart/fulcio-codesign" = "latest"
 ```
 
+### From GitHub Releases
+
+Download the latest binary from [GitHub Releases](https://github.com/danielbodart/fulcio-codesign/releases):
+
+```bash
+curl -fsSL https://github.com/danielbodart/fulcio-codesign/releases/latest/download/fulcio-codesign-*-aarch64-apple-darwin.tar.gz | tar -xz
+./fulcio-codesign --help
+```
+
 ### From source
 
 Requires [Zig](https://ziglang.org/) 0.15.2+ and macOS (Apple Silicon).

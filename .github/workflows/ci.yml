@@ -62,9 +62,15 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           TAG="v${VERSION}"
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            NOTES=$(git log --format="- %s" "$PREV_TAG"..HEAD)
+          else
+            NOTES=$(git log --format="- %s")
+          fi
           git tag "$TAG"
           git push origin "$TAG"
           gh release create "$TAG" \
             "$TARBALL" "$TARBALL.sha256" \
             --title "$TAG" \
-            --generate-notes
+            --notes "$NOTES"
