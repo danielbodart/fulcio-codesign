@@ -51,7 +51,10 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           TARBALL="fulcio-codesign-${VERSION}-aarch64-apple-darwin.tar.gz"
-          tar -czf "$TARBALL" -C zig-out/bin fulcio-codesign
+          STAGING=$(mktemp -d)
+          cp zig-out/bin/fulcio-codesign "$STAGING/"
+          cp scripts/sigstore-token.sh "$STAGING/"
+          tar -czf "$TARBALL" -C "$STAGING" fulcio-codesign sigstore-token.sh
           shasum -a 256 "$TARBALL" > "$TARBALL.sha256"
           echo "TARBALL=$TARBALL" >> "$GITHUB_ENV"
 
