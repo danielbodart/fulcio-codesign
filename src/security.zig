@@ -103,6 +103,12 @@ pub extern "c" fn SecKeychainCreate(path: [*:0]const u8, password_len: u32, pass
 pub extern "c" fn SecKeychainDelete(keychain: SecKeychainRef) OSStatus;
 pub extern "c" fn SecKeychainUnlock(keychain: SecKeychainRef, password_len: u32, password: [*]const u8, use_password: Boolean) OSStatus;
 pub extern "c" fn SecKeychainOpen(path: [*:0]const u8, keychain: *?SecKeychainRef) OSStatus;
+pub extern "c" fn SecKeychainCopySearchList(search_list: *?CFArrayRef) OSStatus;
+pub extern "c" fn SecKeychainSetSearchList(search_list: CFArrayRef) OSStatus;
+
+// CFArray helpers for building search lists
+pub extern "c" fn CFArrayCreateMutableCopy(alloc: ?*anyopaque, capacity: CFIndex, array: CFArrayRef) ?*anyopaque;
+pub extern "c" fn CFArrayInsertValueAtIndex(array: *anyopaque, idx: CFIndex, value: *const anyopaque) void;
 
 pub extern "c" fn SecItemImport(
     import_data: CFDataRef,

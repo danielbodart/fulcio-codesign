@@ -59,6 +59,7 @@ fn run(allocator: std.mem.Allocator, args: Args) !void {
     log.info("creating temporary keychain...", .{});
     var kc = try keychain.TempKeychain.create();
     defer kc.deinit();
+    try kc.addToSearchList();
 
     // Step 3: Generate EC P-256 key pair directly in the temp keychain
     log.info("generating ephemeral key pair...", .{});

@@ -1,7 +1,8 @@
 // keychain.zig — Temporary keychain management
 //
-// Creates a temporary keychain, imports a private key and certificate chain,
-// and provides a SecIdentityRef for code signing. Cleans up on deinit.
+// Creates a temporary keychain, imports certificates, and manages the
+// keychain search list so the CMS encoder can find the full cert chain
+// when building the code signature.
 
 const std = @import("std");
 const sec = @import("security.zig");
@@ -10,6 +11,7 @@ pub const TempKeychain = struct {
     keychain: sec.SecKeychainRef,
     path_buf: [256]u8,
     path_len: usize,
+    original_search_list: ?sec.CFArrayRef = null,
 
     pub fn create() !TempKeychain {
         // Generate a unique keychain path in /tmp
@@ -59,6 +61,31 @@ pub const TempKeychain = struct {
         };
     }
 
+    /// Add the temp keychain to the user keychain search list.
+    /// The CMS encoder uses the search list to build the certificate chain
+    /// when creating the code signature. Without this, it can't find the
+    /// Sigstore root CA and fails with "unable to build chain to self-signed root".
+    pub fn addToSearchList(self: *TempKeychain) !void {
+        // Save current search list
+        var current_list: ?sec.CFArrayRef = null;
+        try sec.checkOSStatus(
+            sec.SecKeychainCopySearchList(&current_list),
+            "SecKeychainCopySearchList",
+        );
+        self.original_search_list = current_list;
+
+        // Create a mutable copy and prepend our keychain
+        const new_list = sec.CFArrayCreateMutableCopy(null, 0, current_list.?) orelse
+            return error.CFArrayCreateFailed;
+        sec.CFArrayInsertValueAtIndex(new_list, 0, @ptrCast(self.keychain));
+
+        try sec.checkOSStatus(
+            sec.SecKeychainSetSearchList(@ptrCast(new_list)),
+            "SecKeychainSetSearchList",
+        );
+        sec.CFRelease(@ptrCast(new_list));
+    }
+
     /// Import a DER certificate into the keychain. Returns the SecCertificateRef.
     pub fn importCert(self: *TempKeychain, cert_der: []const u8) !sec.SecCertificateRef {
         const cert_data = sec.cfData(cert_der);
@@ -102,6 +129,11 @@ pub const TempKeychain = struct {
     }
 
     pub fn deinit(self: *TempKeychain) void {
+        // Restore original keychain search list
+        if (self.original_search_list) |list| {
+            _ = sec.SecKeychainSetSearchList(list);
+            sec.CFRelease(@ptrCast(list));
+        }
         _ = sec.SecKeychainDelete(self.keychain);
         sec.CFRelease(@ptrCast(self.keychain));
     }
