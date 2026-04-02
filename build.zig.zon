@@ -1,0 +1,11 @@
+.{
+    .name = .fulcio_codesign,
+    .version = "0.1.0",
+    .fingerprint = 0xebd78ba318617269,
+    .minimum_zig_version = "0.15.2",
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
