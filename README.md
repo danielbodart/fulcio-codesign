@@ -66,7 +66,7 @@ curl -fsSL https://github.com/danielbodart/fulcio-codesign/releases/latest/downl
 Requires [Zig](https://ziglang.org/) 0.15.2+ and macOS (Apple Silicon).
 
 ```bash
-zig build -Doptimize=ReleaseFast
+zig build -Doptimize=ReleaseSmall
 # Binary at zig-out/bin/fulcio-codesign
 ```
 
