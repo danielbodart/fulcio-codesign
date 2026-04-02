@@ -12,10 +12,10 @@ fulcio-codesign --identifier com.example.app \
                 dist/bin/myapp
 ```
 
-In CI (GitHub Actions), the OIDC token is obtained automatically. Locally, pass it via `--token`:
+In CI (GitHub Actions), the OIDC token is obtained automatically. Locally, use the included helper script:
 
 ```bash
-# Pipe from a helper script
+# Pipe from the helper script (opens browser for Sigstore OAuth)
 ./scripts/sigstore-token.sh | fulcio-codesign --token - --identifier com.example.app dist/bin/myapp
 
 # Or pass directly
@@ -49,7 +49,7 @@ The tool resolves the OIDC token in this order:
 ```toml
 # .mise.toml
 [tools]
-"github:danielbodart/fulcio-codesign" = "0.1.0"
+"github:danielbodart/fulcio-codesign" = "latest"
 ```
 
 ### From source
@@ -63,12 +63,13 @@ zig build -Doptimize=ReleaseFast
 
 ## How it Works
 
-1. Generates an ephemeral EC P-256 key pair via `SecKeyCreateRandomKey`
-2. Builds a PKCS#10 CSR as raw ASN.1 DER
-3. Exchanges an OIDC token + CSR for a short-lived certificate from [Fulcio](https://fulcio.sigstore.dev)
-4. Creates a temporary keychain, imports the key and certificate chain
-5. Signs the binary using `SecCodeSignerCreate` + `SecCodeSignerAddSignatureWithErrors` (the same Security.framework SPI that `/usr/bin/codesign` uses internally)
-6. Cleans up the temporary keychain
+1. Creates a temporary keychain and adds it to the user keychain search list
+2. Generates an ephemeral EC P-256 key pair directly in the temporary keychain via `SecKeyCreateRandomKey`
+3. Builds a PKCS#10 CSR as raw ASN.1 DER
+4. Exchanges an OIDC token + CSR for a short-lived certificate from [Fulcio](https://fulcio.sigstore.dev)
+5. Imports the full certificate chain (leaf, intermediate, root) into the temporary keychain
+6. Signs the binary using `SecCodeSignerCreate` + `SecCodeSignerAddSignatureWithErrors` (the same Security.framework SPI that `/usr/bin/codesign` uses internally)
+7. Restores the original keychain search list and deletes the temporary keychain
 
 The signature includes:
 - **Hardened runtime** (`runtime` flag)
